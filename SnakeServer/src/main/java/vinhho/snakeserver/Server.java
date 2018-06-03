@@ -106,6 +106,7 @@ class UserHandler implements Runnable {
       message = sc.nextLine();
         // update user list
       server.broadcastMessages(message, user);
+      System.out.println(message);
     }
     // end of Thread
     server.removeUser(user);
