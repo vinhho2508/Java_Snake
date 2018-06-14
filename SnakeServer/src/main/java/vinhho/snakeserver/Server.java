@@ -17,17 +17,20 @@ import java.util.Scanner;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.awt.Color;
-
+import java.util.Random;
 public class Server {
 
   private int port;
   private List<User> clients;
   private ServerSocket server;
-
+  List<Room> rooms=new ArrayList<Room>();
   public static void main(String[] args) throws IOException {
     new Server(12345).run();
   }
-
+  public List<Room> getrooms()
+  {
+      return rooms;
+  }
   public Server(int port) {
     this.port = port;
     this.clients = new ArrayList<User>();
@@ -71,10 +74,9 @@ public class Server {
   }
 
   // send incoming msg to all Users
-  public void broadcastMessages(String msg, User userSender) {
+  public void broadcastMessages(String msg) {
     for (User client : this.clients) {
-      client.getOutStream().println(
-          userSender.getNickname() +  msg);
+      client.getOutStream().println(msg);
     }
   }
 
@@ -84,12 +86,90 @@ public class Server {
       client.getOutStream().println(this.clients);
     }
   } 
+  
+  public void sendMessageToUser(String msg, User userSender){
+    
+     for (User client : this.clients) {
+         if(client.getRoom()!=-1){
+            if (client.getRoom()==userSender.getRoom())
+                msg+=","+client.getNickname();
+     }
+     }
+    for (User client : this.clients) {
+      if (client.getRoom()==userSender.getRoom()) {
+       // userSender.getOutStream().println(userSender.toString() + " -> " + client.toString() +": " + msg);
+        client.getOutStream().println(msg);
+      }
+    }
+  }
+  public void sendMessageToUser2(String msg, User userSender){
+    
+    
+    for (User client : this.clients) {
+      if (client.getRoom()==userSender.getRoom()) {
+       // userSender.getOutStream().println(userSender.toString() + " -> " + client.toString() +": " + msg);
+        client.getOutStream().println(msg);
+        System.out.println("send "+msg+" to "+client.getNickname());
+      }
+    }
+  }
+  public void sendMessageToUser3(String msg, User userSender){
+    
+    
+    for (User client : this.clients) {
+      if (client.getRoom()==userSender.getRoom() && !client.getNickname().equals(userSender.getNickname())) {
+       // userSender.getOutStream().println(userSender.toString() + " -> " + client.toString() +": " + msg);
+        client.getOutStream().println(msg);
+      }
+    }
+  }
+ 
 }
-
+class Room
+{
+    int RoomID=-1;
+    int st=1;
+    List<User> users=new ArrayList<User>();
+    void setST(int i)
+    {
+        st=i;
+    }
+    int getST()
+    {
+        return this.st;
+    }
+    void setID(int i)
+    {
+        RoomID=i;
+    }
+    int getID()
+    {
+        return this.RoomID;
+    }
+    void addUser(User user)
+    {
+        if(user!=null)
+            users.add(user);
+        return;
+    }
+    List<User> getUsers()
+    {
+        return users;
+    }
+    String roomString()
+    {
+        String s="+,"+this.RoomID+","+this.st;
+        for(User u:users)
+        {
+           s+=","+u.getNickname();
+        }
+        return s;
+    }
+}
 class UserHandler implements Runnable {
 
-  private Server server;
-  private User user;
+  public Server server;
+  public User user;
 
   public UserHandler(Server server, User user) {
     this.server = server;
@@ -105,8 +185,80 @@ class UserHandler implements Runnable {
     while (sc.hasNextLine()) {
       message = sc.nextLine();
         // update user list
-      server.broadcastMessages(message, user);
+      //server.broadcastMessages(message);
       System.out.println(message);
+      if (message.charAt(0) == '-'){
+          String room=message.substring(1,5);
+          //System.out.println(room);
+          for(Room r:server.getrooms())
+          {
+              if(room.equals(Integer.toString(r.RoomID)))
+              {
+                  r.setST(0);
+                  String msg="#";
+                  //msg+=r.roomString();
+                  server.sendMessageToUser2(msg, user);
+              }
+          }
+      }
+      if(message.charAt(0)=='*')
+      {
+          server.sendMessageToUser2(message, user);
+      }
+      
+       if (message.charAt(0) == '+'){
+        if(message.contains(" ")){
+        //  System.out.println("private msg : " + message);
+            String msg=new String();
+          //int firstSpace = message.indexOf(" ");
+          String roomid= message.substring(2, 6);
+         // System.out.println(roomid);
+          List<Room> rooms=server.getrooms();
+          System.out.println(rooms.size());
+          for(Room r:rooms)
+          {
+             // System.out.println(r.getID());
+              
+                if(Integer.parseInt(roomid)==r.getID())
+                {
+                    if(r.getST()==0)
+                    {
+                        msg="-"+user.getNickname();
+                        server.broadcastMessages(msg);
+                    }
+                    System.out.println(r.getUsers().size());
+                    //msg="+,"+roomid;
+                    r.addUser(user); 
+                    user.setRoom(r.getID());
+                    msg+=r.roomString();                
+                    System.out.println(msg);
+
+                    server.sendMessageToUser2(msg, user);
+                }
+          
+          }
+          //System.out.println(userPrivate);
+          //server.sendMessageToUser(message.substring(firstSpace+1, message.length()), user);
+        }
+        
+        else
+        {
+            Random rand = new Random();
+
+            int  n = rand.nextInt(9999) + 1000;
+            Room r=new Room();
+            r.setID(n);
+            r.setST(1);
+            r.addUser(this.user);
+            user.setRoom(n);
+            server.rooms.add(r);
+            String msg="+,"+n;
+            server.sendMessageToUser(msg, user);
+        
+        }
+
+      // Gestion du changement
+      }
     }
     // end of Thread
     server.removeUser(user);
@@ -136,6 +288,10 @@ class User {
   public void setRoom(int a)
   {
       this.RoomID=a;
+  }
+  public int getRoom()
+  {
+      return this.RoomID;
   }
   // getteur
   public PrintStream getOutStream(){

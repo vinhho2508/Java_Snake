@@ -10,10 +10,12 @@ import java.awt.Graphics;
 import java.awt.Point;
 import java.util.Random;
 
-public class ConRan {
+public class ConRan extends Thread
+{
     int doDai = 3;
     int []x;
     int []y;
+    ConRan1 ran1;
     
     public static int GO_UP = 1;
     public static int GO_DOWN = -1;
@@ -30,8 +32,15 @@ public class ConRan {
     int maxLen =7;
     
     boolean udAfterChangeVt = true;
-    
-    public ConRan(){
+    int[] getx()
+    {
+        return this.x;
+    }
+    int[] gety()
+    {
+        return this.y;
+    }
+    ConRan(){
         x = new int[200];
         y = new int[200];
         
@@ -44,6 +53,8 @@ public class ConRan {
         x[2]=5;
         y[2]=2;
     }
+
+    
     public void resetGame(){
         x = new int[200];
         y = new int[200];
@@ -73,17 +84,6 @@ public class ConRan {
             if(x[i]==x1&&y[i]==y1) return true;
         return false;
     }
-    public Point layToaDoMoi(){
-        Random r = new Random();
-        int x;
-        int y;
-        do{
-           x= r.nextInt(19);
-           y = r.nextInt(19);
-        }while(toaDoCoNamTrongThanRan(x,y));
-        
-        return new Point(x,y);
-    }
     public int getCurrentSpeed(){
         int speed = 200;
         for(int i = 0;i<GameScreen.CurrentLevel;i++)
@@ -99,15 +99,7 @@ public class ConRan {
             speed = getCurrentSpeed();
         }
         
-        for(int i = 1;i<doDai;i++){
-            if(x[0]==x[i]&&y[0]==y[i]){
-                GameScreen.isPlaying=false;
-                GameScreen.isGameOver=true;
-                
-                GameScreen.diem=0;
-                GameScreen.CurrentLevel=1;
-            }
-        }
+        
         
         if(System.currentTimeMillis()-t2>200){
             
@@ -123,17 +115,7 @@ public class ConRan {
         
         
         if(System.currentTimeMillis()-t1>speed){
-            
-            
-            
-            
-            if(GameScreen.bg[x[0]][y[0]]==2){
-                doDai++;
-                GameScreen.bg[x[0]][y[0]]=0;
-                GameScreen.bg[layToaDoMoi().x][layToaDoMoi().y]=2;
-                
-                GameScreen.diem+=1;
-            }
+ 
            
             for(int i=doDai-1;i>0;i--){
                 x[i]=x[i-1];
@@ -147,19 +129,27 @@ public class ConRan {
 
              
             
-            if(x[0]<0) x[0]=19;
-            if(x[0]>19) x[0]=0;
-            if(y[0]<0) y[0]=19;
-            if(y[0]>19) y[0]=0;
+            if(x[0]<0) x[0]=31;
+            if(x[0]>31) x[0]=0;
+            if(y[0]<0) y[0]=31;
+            if(y[0]>31) y[0]=0;
 
             t1 = System.currentTimeMillis();
         }
        
     }
+    public void gietRan()
+    {
+        for(int i=0;i<doDai;i++){
+            x[i]=0;
+        y[i]=0;
+        }
+    }
     public void veRan(Graphics g){
         g.setColor(Color.red);
         for(int i=1;i<doDai;i++)
-            g.drawImage(Data.imageBody, x[i]*20+GameScreen.padding, y[i]*20+GameScreen.padding, null);
+            g.fillRect(x[i]*20+10,y[i]*20+10, 18, 18);
+           // g.drawImage(Data.imageBody, x[i]*20+GameScreen.padding, y[i]*20+GameScreen.padding, null);
         if(vector==ConRan.GO_UP) g.drawImage(Data.HeadGoUp.getCurrentImage(), x[0]*20-6+GameScreen.padding, y[0]*20-6+GameScreen.padding, null);
         else if(vector==ConRan.GO_DOWN) g.drawImage(Data.HeadGoDown.getCurrentImage(), x[0]*20-6+GameScreen.padding, y[0]*20-6+GameScreen.padding, null);
         else if(vector==ConRan.GO_RIGHT) g.drawImage(Data.HeadGoRight.getCurrentImage(), x[0]*20-6+GameScreen.padding, y[0]*20-6+GameScreen.padding, null);
